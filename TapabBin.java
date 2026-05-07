@@ -168,7 +168,7 @@ public class TapabBin {
     private void viewMenu() {
         while (true) {
             clearScreen();
-            System.out.println("\n--- VIEW MENU ---");
+            System.out.println("\n--- VIEW CATEGORY ---");
             System.out.println("1. Milk");
             System.out.println("2. Coffee");
             System.out.println("3. Tea");
@@ -550,8 +550,7 @@ public class TapabBin {
     // Print blank lines to make the console look cleaner
     // It pushes old text upward so the next screen looks clearer.
     private void clearScreen() {
-        for (int i = 0; i < 30; i++) {
-            System.out.println();
-        }
+        System.out.print("\033[H\033[2J"); // Clear the console screen
+        System.out.flush(); // Flush the output buffer
     }
 }
