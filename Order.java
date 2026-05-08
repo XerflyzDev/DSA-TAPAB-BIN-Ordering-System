@@ -1,3 +1,6 @@
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 // Order class for storing customer order details
 // It keeps all information needed for one completed or waiting order.
 public class Order {
@@ -28,14 +31,13 @@ public class Order {
     // Return a formatted text summary of the order
     // It combines the stored order data into one readable line.
     public String summary() {
-        return String.format(
-            "Order #%d | %s x%d | Sweetness: %s | Ice: %s | Total: %.2f THB",
-            orderId,
-            drink.name,
-            quantity,
-            sweetness,
-            iceLevel,
-            totalPrice
-        );
+        String totalText = BigDecimal.valueOf(totalPrice)
+            .setScale(2, RoundingMode.HALF_UP)
+            .toPlainString();
+
+        return "Order #" + orderId
+            + " | Sweetness: " + sweetness
+            + " | Ice: " + iceLevel
+            + " | Total: " + totalText + " THB";
     }
 }
