@@ -92,9 +92,10 @@ public class TapabBin {
             System.out.println("\n--- CUSTOMER MENU ---");
             System.out.println("1. View Category");
             System.out.println("2. Show Waiting Queue");
-            System.out.println("3. Back");
+            System.out.println("3. Search Drink by Name");
+            System.out.println("4. Back");
 
-            int choice = readMenuChoice(1, 3);
+            int choice = readMenuChoice(1, 4);
             switch (choice) {
                 case 1:
                     viewMenu();
@@ -104,11 +105,48 @@ public class TapabBin {
                     pauseAndContinue();
                     break;
                 case 3:
+                    searchDrinkByName();
+                    pauseAndContinue();
+                    break;
+                case 4:
                     clearScreen();
                     return;
                 default:
                     break;
             }
+        }
+    }
+
+    // Search drinks by a name keyword (case-insensitive, supports partial matches).
+    // It prints the first match found and lets user continue to buy.
+    private void searchDrinkByName() {
+        while (true) {
+            System.out.println("\n--- SEARCH DRINK BY NAME ---");
+            System.out.print("Enter keyword (0 to cancel): ");
+
+            String keyword = scanner.nextLine().trim();
+            if (keyword.equals("0")) {
+                return;
+            }
+            if (keyword.isEmpty()) {
+                showError("Keyword cannot be empty.");
+                continue;
+            }
+
+            Node found = menu.findByNameRecursive(keyword);
+            if (found == null) {
+                showError("No drinks found matching \"" + keyword + "\".");
+                continue; // loop back to enter keyword again
+            }
+
+            System.out.printf("Found: [%d] %-18s %-8s %.2f THB%n", found.id, found.name, found.category, found.price);
+            System.out.println("\n1. Buy this drink");
+            System.out.println("0. Back");
+            int choice = readMenuChoice(0, 1);
+            if (choice == 1) {
+                placeOrderForDrink(found);
+            }
+            return; // after buy/back, go back to customer menu
         }
     }
 
@@ -238,20 +276,25 @@ public class TapabBin {
         }
 
         System.out.println("0. Back");
-        int drinkId = readInt("Please enter drink ID: ", 0);
-        if (drinkId == 0) {
-            return;
-        }
-        Node drink = menu.findByIdIterative(drinkId);
+        Node drink = null;
+        while (true) {
+            int drinkId = readInt("Please enter drink ID: ", 0);
+            if (drinkId == 0) {
+                return;
+            }
 
-        if (drink == null) {
-            showError("Invalid drink ID.");
-            return;
-        }
+            drink = menu.findByIdIterative(drinkId);
+            if (drink == null) {
+                showError("Invalid drink ID.");
+                continue; // ask again
+            }
 
-        if (categoryFilter != null && !drink.category.equalsIgnoreCase(categoryFilter)) {
-            showError("Please choose a drink from the selected category only.");
-            return;
+            if (categoryFilter != null && !drink.category.equalsIgnoreCase(categoryFilter)) {
+                showError("Please choose a drink from the selected category only.");
+                continue; // ask again
+            }
+
+            break; // valid drink selected
         }
 
         String sweetness = readSweetnessLevel();
@@ -277,6 +320,39 @@ public class TapabBin {
         clearScreen();
         showQueue();
         pauseAndContinue();
+    }
+
+    // Create a new order for an already-selected drink node (used by search flow).
+    // It enqueues the order and shows the waiting queue (caller handles the pause).
+    private void placeOrderForDrink(Node drink) {
+        clearScreen();
+        System.out.println("\n--- ORDER ---");
+        System.out.printf("Selected: [%d] %s (%s) %.2f THB%n", drink.id, drink.name, drink.category, drink.price);
+
+        String sweetness = readSweetnessLevel();
+        String iceLevel = readIceLevel();
+
+        int quantity = 1;
+        double totalPrice = drink.price;
+        System.out.printf("Total price: %.2f THB%n", totalPrice);
+
+        double payment = readPaymentAmount(totalPrice);
+        double change = payment - totalPrice;
+
+        Order order = new Order(nextOrderId, drink, sweetness, iceLevel, quantity, totalPrice);
+        nextOrderId++;
+        orderQueue.offer(order);
+
+        System.out.println("\nOrder placed successfully.");
+        System.out.println(order.summary());
+        System.out.printf("Payment: %.2f THB%n", payment);
+        System.out.printf("Change: %.2f THB%n", change);
+        System.out.println("Thank you for your order.");
+
+        System.out.print("\nPress Enter to view the waiting queue...");
+        scanner.nextLine();
+        clearScreen();
+        showQueue();
     }
 
     // Display all orders currently waiting in the queue
